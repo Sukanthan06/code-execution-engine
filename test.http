@@ -1,0 +1,7 @@
+POST http://localhost:8080/execute
+Content-Type: application/json
+
+{
+    "language": "python",
+    "code": "print('hello')"
+}
