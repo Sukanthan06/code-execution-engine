@@ -1,15 +1,11 @@
 package handlers
-<<<<<<< main
-=======
 
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/Sukanthan06/code-execution-engine/executor/sandbox"
-
 	"github.com/Sukanthan06/code-execution-engine/models"
+	"github.com/gin-gonic/gin"
 )
 
 func ExecuteCode(c *gin.Context) {
@@ -36,4 +32,3 @@ func ExecuteCode(c *gin.Context) {
 		"output": output,
 	})
 }
->>>>>>> local

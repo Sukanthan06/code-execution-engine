@@ -1,8 +1,11 @@
 package sandbox
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
+	"time"
 )
 
 func RunPython(code string) (string, error) {
@@ -17,10 +20,16 @@ func RunPython(code string) (string, error) {
 	}
 
 	tmpFile.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	cmd := exec.Command("python", tmpFile.Name())
+	cmd := exec.CommandContext(ctx, "python", tmpFile.Name())
 
 	output, err := cmd.CombinedOutput()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("execution timed out after 5 seconds")
+	}
 
 	return string(output), err
 
