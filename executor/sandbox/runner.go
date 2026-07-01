@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func RunPython(code string) (string, error) {
-	tmpFile, err := os.CreateTemp("", "*.py")
+func RunCode(code string, command string, extension string) (string, error) {
+	tmpFile, err := os.CreateTemp("", "*"+extension)
 	if err != nil {
 		return "", err
 	}
@@ -23,7 +23,7 @@ func RunPython(code string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "python", tmpFile.Name())
+	cmd := exec.CommandContext(ctx, command, tmpFile.Name())
 
 	output, err := cmd.CombinedOutput()
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Sukanthan06/code-execution-engine/executor/sandbox"
+	"github.com/Sukanthan06/code-execution-engine/languages"
 	"github.com/Sukanthan06/code-execution-engine/models"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,16 @@ func ExecuteCode(c *gin.Context) {
 		return
 	}
 
-	output, err := sandbox.RunPython(req.Code)
+	lang, exists := languages.SupportedLanguages[req.Language]
+
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "unsupported language",
+		})
+		return
+	}
+
+	output, err := sandbox.RunCode(req.Code, lang.Command, lang.Extension)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
