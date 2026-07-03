@@ -13,4 +13,9 @@ var SupportedLanguages = map[string]Language{
 		Extension: ".py",
 		Command:   "python",
 	},
+	"javascript": {
+		Name:      "JavaScript",
+		Extension: ".js",
+		Command:   "node",
+	},
 }
