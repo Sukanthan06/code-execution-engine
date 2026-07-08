@@ -28,7 +28,7 @@ func ExecuteCode(c *gin.Context) {
 		return
 	}
 
-	output, err := sandbox.RunCode(req.Code, lang.Command, lang.Extension)
+	output, err := sandbox.RunCode(req.Code, lang.Extension, lang.Interpreter, lang.Compiler)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
