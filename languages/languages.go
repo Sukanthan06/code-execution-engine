@@ -24,4 +24,9 @@ var SupportedLanguages = map[string]Language{
 		Extension: ".c",
 		Compiler:  "gcc",
 	},
+	"cpp": {
+		Name:      "C++",
+		Extension: ".cpp",
+		Compiler:  "g++",
+	},
 }
