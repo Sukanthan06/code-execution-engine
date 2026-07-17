@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	dockerrunner "github.com/Sukanthan06/code-execution-engine/executor/docker"
 	"github.com/Sukanthan06/code-execution-engine/executor/sandbox"
 	"github.com/Sukanthan06/code-execution-engine/languages"
 	"github.com/Sukanthan06/code-execution-engine/models"
@@ -27,9 +28,24 @@ func ExecuteCode(c *gin.Context) {
 		})
 		return
 	}
+	var output string
+	var err error
 
-	output, err := sandbox.RunCode(req.Code, lang.Extension, lang.Interpreter, lang.Compiler)
-
+	if req.Language == "python" {
+		output, err = dockerrunner.RunCode(
+			req.Code,
+			lang.Extension,
+			lang.DockerInterpreter,
+			lang.DockerCompiler,
+		)
+	} else {
+		output, err = sandbox.RunCode(
+			req.Code,
+			lang.Extension,
+			lang.LocalInterpreter,
+			lang.LocalCompiler,
+		)
+	}
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":  err.Error(),

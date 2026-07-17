@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func RunCode(code string, extension string, interpreter string, compiler string) (string, error) {
+func RunCode(code string, extension string, LocalInterpreter string, LocalCompiler string) (string, error) {
 	tmpFile, err := os.CreateTemp("", "*"+extension)
 	if err != nil {
 		return "", err
@@ -23,9 +23,9 @@ func RunCode(code string, extension string, interpreter string, compiler string)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	// for interpreted languages
-	if interpreter != "" {
+	if LocalInterpreter != "" {
 
-		cmd := exec.CommandContext(ctx, interpreter, tmpFile.Name())
+		cmd := exec.CommandContext(ctx, LocalInterpreter, tmpFile.Name())
 
 		output, err := cmd.CombinedOutput()
 
@@ -40,7 +40,7 @@ func RunCode(code string, extension string, interpreter string, compiler string)
 
 	defer os.Remove(executable)
 	//compile
-	compilecmd := exec.CommandContext(ctx, compiler, tmpFile.Name(), "-o", executable)
+	compilecmd := exec.CommandContext(ctx, LocalCompiler, tmpFile.Name(), "-o", executable)
 
 	compileOutput, err := compilecmd.CombinedOutput()
 
