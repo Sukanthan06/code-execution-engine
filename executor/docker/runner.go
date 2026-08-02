@@ -32,23 +32,52 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 		return "", err
 	}
 
-	cmd := exec.CommandContext(
-		ctx,
-		"docker",
-		"run",
-		"--rm",
-		"-v",
-		fmt.Sprintf("%s:/app/main%s", absPath, extension),
-		"code-runner",
-		DockerInterpreter,
-		fmt.Sprintf("/app/main%s", extension),
-	)
+	if DockerInterpreter != "" {
+		cmd := exec.CommandContext(
+			ctx,
+			"docker",
+			"run",
+			"--rm",
+			"-v",
+			fmt.Sprintf("%s:/app/main%s", absPath, extension),
+			"code-runner",
+			DockerInterpreter,
+			fmt.Sprintf("/app/main%s", extension),
+		)
 
-	output, err := cmd.CombinedOutput()
+		output, err := cmd.CombinedOutput()
 
-	if ctx.Err() == context.DeadlineExceeded {
-		return "", fmt.Errorf("execution timed out after 5 seconds")
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("execution timed out after 5 seconds")
+		}
+
+		return string(output), err
 	}
+	if DockerCompiler != "" {
+		command := fmt.Sprintf(
+			"%s /app/main%s -o /app/main && /app/main",
+			DockerCompiler,
+			extension,
+		)
+		cmd := exec.CommandContext(
+			ctx,
+			"docker",
+			"run",
+			"--rm",
+			"-v",
+			fmt.Sprintf("%s:/app/main%s", absPath, extension),
+			"code-runner",
+			"bash",
+			"-c",
+			command,
+		)
+		output, err := cmd.CombinedOutput()
 
-	return string(output), err
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("execution timed out after 5 seconds")
+		}
+		return string(output), err
+	}
+	return "", fmt.Errorf("no valid interpreter or compiler configured")
+
 }

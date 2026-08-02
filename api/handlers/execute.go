@@ -31,7 +31,7 @@ func ExecuteCode(c *gin.Context) {
 	var output string
 	var err error
 
-	if req.Language == "python" || req.Language == "javascript" {
+	if req.Language == "python" || req.Language == "javascript" || req.Language == "c" {
 		output, err = dockerrunner.RunCode(
 			req.Code,
 			lang.Extension,
