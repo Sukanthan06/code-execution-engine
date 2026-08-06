@@ -59,7 +59,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	}
 	if DockerCompiler != "" {
 		command := fmt.Sprintf(
-			"%s /app/main%s -o /app/main && /app/main",
+			"%s /app/main%s -o /tmp/main && /tmp/main",
 			DockerCompiler,
 			extension,
 		)

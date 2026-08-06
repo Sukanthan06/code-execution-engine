@@ -9,6 +9,10 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m -s /bin/bash runner
+
 WORKDIR  /app
+
+USER runner
 
 CMD ["bash"]
