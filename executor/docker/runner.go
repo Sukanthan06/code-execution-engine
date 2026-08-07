@@ -6,7 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
+
+	"github.com/Sukanthan06/code-execution-engine/config"
 )
 
 func RunCode(code string, extension string, DockerInterpreter string, DockerCompiler string) (string, error) {
@@ -23,7 +24,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	}
 	tmpFile.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AppConfig.Timeout)
 	defer cancel()
 
 	absPath, err := filepath.Abs(tmpFile.Name())
@@ -39,15 +40,15 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 			"run",
 			"--rm",
 			"--network",
-			"none",
-			"--memory=128m",
-			"--cpus=1",
+			config.AppConfig.NetworkMode,
+			"--memory="+config.AppConfig.MemoryLimit,
+			"--cpus="+config.AppConfig.CPULimit,
 			"--read-only",
 			"--tmpfs",
 			"/tmp:rw,exec",
 			"-v",
 			fmt.Sprintf("%s:/app/main%s", absPath, extension),
-			"code-runner",
+			config.AppConfig.DockerImage,
 			DockerInterpreter,
 			fmt.Sprintf("/app/main%s", extension),
 		)
@@ -55,7 +56,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 		output, err := cmd.CombinedOutput()
 
 		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("execution timed out after 5 seconds")
+			return "", fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
 		}
 
 		return string(output), err
@@ -72,15 +73,15 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 			"run",
 			"--rm",
 			"--network",
-			"none",
-			"--memory=128m",
-			"--cpus=1",
+			config.AppConfig.NetworkMode,
+			"--memory="+config.AppConfig.MemoryLimit,
+			"--cpus="+config.AppConfig.CPULimit,
 			"--read-only",
 			"--tmpfs",
 			"/tmp:rw,exec",
 			"-v",
 			fmt.Sprintf("%s:/app/main%s", absPath, extension),
-			"code-runner",
+			config.AppConfig.DockerImage,
 			"bash",
 			"-c",
 			command,
@@ -88,7 +89,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 		output, err := cmd.CombinedOutput()
 
 		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("execution timed out after 5 seconds")
+			return "", fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
 		}
 		return string(output), err
 	}
