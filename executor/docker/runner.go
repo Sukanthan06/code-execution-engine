@@ -32,67 +32,34 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	if err != nil {
 		return "", err
 	}
+	args := []string{
+		"run",
+		"--rm",
+		"--network", config.AppConfig.NetworkMode,
+		"--memory=" + config.AppConfig.MemoryLimit,
+		"--cpus=" + config.AppConfig.CPULimit,
+		"--read-only",
+		"--tmpfs", "/tmp:rw,exec",
+		"-v", fmt.Sprintf("%s:/app/main%s:ro", absPath, extension),
+		config.AppConfig.DockerImage,
+	}
 
 	if DockerInterpreter != "" {
-		cmd := exec.CommandContext(
-			ctx,
-			"docker",
-			"run",
-			"--rm",
-			"--network",
-			config.AppConfig.NetworkMode,
-			"--memory="+config.AppConfig.MemoryLimit,
-			"--cpus="+config.AppConfig.CPULimit,
-			"--read-only",
-			"--tmpfs",
-			"/tmp:rw,exec",
-			"-v",
-			fmt.Sprintf("%s:/app/main%s", absPath, extension),
-			config.AppConfig.DockerImage,
-			DockerInterpreter,
-			fmt.Sprintf("/app/main%s", extension),
-		)
-
-		output, err := cmd.CombinedOutput()
-
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
-		}
-
-		return string(output), err
+		args = append(args, DockerInterpreter, fmt.Sprintf("/app/main%s", extension))
+	} else if DockerCompiler != "" {
+		command := fmt.Sprintf("%s /app/main%s -o /tmp/main && /tmp/main", DockerCompiler, extension)
+		args = append(args, "bash", "-c", command)
+	} else {
+		return "", fmt.Errorf("no valid interpreter or compiler configured")
 	}
-	if DockerCompiler != "" {
-		command := fmt.Sprintf(
-			"%s /app/main%s -o /tmp/main && /tmp/main",
-			DockerCompiler,
-			extension,
-		)
-		cmd := exec.CommandContext(
-			ctx,
-			"docker",
-			"run",
-			"--rm",
-			"--network",
-			config.AppConfig.NetworkMode,
-			"--memory="+config.AppConfig.MemoryLimit,
-			"--cpus="+config.AppConfig.CPULimit,
-			"--read-only",
-			"--tmpfs",
-			"/tmp:rw,exec",
-			"-v",
-			fmt.Sprintf("%s:/app/main%s", absPath, extension),
-			config.AppConfig.DockerImage,
-			"bash",
-			"-c",
-			command,
-		)
-		output, err := cmd.CombinedOutput()
 
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
-		}
-		return string(output), err
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	output, err := cmd.CombinedOutput()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
 	}
-	return "", fmt.Errorf("no valid interpreter or compiler configured")
+
+	return string(output), err
 
 }
