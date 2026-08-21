@@ -7,17 +7,19 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/Sukanthan06/code-execution-engine/models"
 )
 
-func RunCode(code string, extension string, LocalInterpreter string, LocalCompiler string) (string, error) {
+func RunCode(code string, extension string, LocalInterpreter string, LocalCompiler string) (*models.ExecutionResult, error) {
 	tmpFile, err := os.CreateTemp("", "*"+extension)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer os.Remove(tmpFile.Name())
 
 	if _, err := tmpFile.WriteString(code); err != nil {
-		return "", err
+		return nil, err
 	}
 	tmpFile.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -28,12 +30,15 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 		cmd := exec.CommandContext(ctx, LocalInterpreter, tmpFile.Name())
 
 		output, err := cmd.CombinedOutput()
-
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("execution timed out after 5 seconds")
+		res := &models.ExecutionResult{
+			Output: string(output),
 		}
 
-		return string(output), err
+		if ctx.Err() == context.DeadlineExceeded {
+			return res, fmt.Errorf("execution timed out after 5 seconds")
+		}
+
+		return res, err
 	}
 	// compiled languages
 	executable := filepath.Join(os.TempDir(), fmt.Sprintf("%d.exe", time.Now().UnixNano()))
@@ -45,16 +50,19 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 	compileOutput, err := compilecmd.CombinedOutput()
 
 	if err != nil {
-		return string(compileOutput), err
+		return &models.ExecutionResult{Output: string(compileOutput)}, err
 	}
 	//execute
 	runCmd := exec.CommandContext(ctx, executable)
 
 	runOutput, err := runCmd.CombinedOutput()
-
-	if ctx.Err() == context.DeadlineExceeded {
-		return "", fmt.Errorf("execution timed out after 5 seconds")
+	res := &models.ExecutionResult{
+		Output: string(runOutput),
 	}
 
-	return string(runOutput), err
+	if ctx.Err() == context.DeadlineExceeded {
+		return res, fmt.Errorf("execution timed out after 5 seconds")
+	}
+
+	return res, err
 }

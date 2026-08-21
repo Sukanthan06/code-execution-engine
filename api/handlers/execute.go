@@ -28,24 +28,30 @@ func ExecuteCode(c *gin.Context) {
 		})
 		return
 	}
-	var output string
+	var result *models.ExecutionResult
 	var err error
 
 	if req.Language == "python" || req.Language == "javascript" || req.Language == "c" || req.Language == "cpp" {
-		output, err = dockerrunner.RunCode(
+		result, err = dockerrunner.RunCode(
 			req.Code,
 			lang.Extension,
 			lang.DockerInterpreter,
 			lang.DockerCompiler,
 		)
 	} else {
-		output, err = sandbox.RunCode(
+		result, err = sandbox.RunCode(
 			req.Code,
 			lang.Extension,
 			lang.LocalInterpreter,
 			lang.LocalCompiler,
 		)
 	}
+
+	var output string
+	if result != nil {
+		output = result.Output
+	}
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":  err.Error(),
@@ -54,7 +60,7 @@ func ExecuteCode(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"output": output,
+	c.JSON(http.StatusOK, models.ExecuteResponse{
+		Output: output,
 	})
 }

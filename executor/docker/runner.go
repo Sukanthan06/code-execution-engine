@@ -8,19 +8,19 @@ import (
 	"path/filepath"
 
 	"github.com/Sukanthan06/code-execution-engine/config"
+	"github.com/Sukanthan06/code-execution-engine/models"
 )
 
-func RunCode(code string, extension string, DockerInterpreter string, DockerCompiler string) (string, error) {
+func RunCode(code string, extension string, DockerInterpreter string, DockerCompiler string) (*models.ExecutionResult, error) {
 
 	tmpFile, err := os.CreateTemp("", "*"+extension)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer os.Remove(tmpFile.Name())
 
 	if _, err := tmpFile.WriteString(code); err != nil {
-		return "", err
-
+		return nil, err
 	}
 	tmpFile.Close()
 
@@ -30,7 +30,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	absPath, err := filepath.Abs(tmpFile.Name())
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	args := []string{
 		"run",
@@ -50,16 +50,19 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 		command := fmt.Sprintf("%s /app/main%s -o /tmp/main && /tmp/main", DockerCompiler, extension)
 		args = append(args, "bash", "-c", command)
 	} else {
-		return "", fmt.Errorf("no valid interpreter or compiler configured")
+		return nil, fmt.Errorf("no valid interpreter or compiler configured")
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	output, err := cmd.CombinedOutput()
 
-	if ctx.Err() == context.DeadlineExceeded {
-		return "", fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
+	res := &models.ExecutionResult{
+		Output: string(output),
 	}
 
-	return string(output), err
+	if ctx.Err() == context.DeadlineExceeded {
+		return res, fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
+	}
 
+	return res, err
 }
