@@ -23,8 +23,9 @@ func ExecuteCode(c *gin.Context) {
 	lang, exists := languages.SupportedLanguages[req.Language]
 
 	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "unsupported language",
+		c.JSON(http.StatusBadRequest, models.ExecuteResponse{
+			Status: models.StatusUnsupportedLanguage,
+			Error:  "unsupported language",
 		})
 		return
 	}
@@ -53,14 +54,25 @@ func ExecuteCode(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":  err.Error(),
-			"output": output,
-		})
+		errMsg := err.Error()
+		if result != nil && result.Error != "" {
+			errMsg = result.Error
+		}
+		resp := models.ExecuteResponse{
+			Output: output,
+			Error:  errMsg,
+		}
+		if result != nil {
+			resp.Status = result.Status
+			resp.ExitCode = result.ExitCode
+		}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
 	c.JSON(http.StatusOK, models.ExecuteResponse{
-		Output: output,
+		Output:   output,
+		Status:   result.Status,
+		ExitCode: result.ExitCode,
 	})
 }

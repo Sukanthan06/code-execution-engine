@@ -47,7 +47,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	if DockerInterpreter != "" {
 		args = append(args, DockerInterpreter, fmt.Sprintf("/app/main%s", extension))
 	} else if DockerCompiler != "" {
-		command := fmt.Sprintf("%s /app/main%s -o /tmp/main && /tmp/main", DockerCompiler, extension)
+		command := fmt.Sprintf("%s /app/main%s -o /tmp/main || exit 100; /tmp/main", DockerCompiler, extension)
 		args = append(args, "bash", "-c", command)
 	} else {
 		return nil, fmt.Errorf("no valid interpreter or compiler configured")
@@ -61,8 +61,29 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
+		res.Status = models.StatusTimeLimitExceeded
+		res.Error = fmt.Sprintf("execution timed out after %v", config.AppConfig.Timeout)
 		return res, fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
 	}
 
-	return res, err
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			res.ExitCode = exitErr.ExitCode()
+			if DockerCompiler != "" && res.ExitCode == 100 {
+				res.Status = models.StatusCompilationError
+				res.Error = "compilation error"
+			} else {
+				res.Status = models.StatusRuntimeError
+				res.Error = "runtime error"
+			}
+		} else {
+			res.Status = models.StatusInternalError
+			res.Error = err.Error()
+		}
+		return res, err
+	}
+
+	res.Status = models.StatusSuccess
+	res.ExitCode = 0
+	return res, nil
 }

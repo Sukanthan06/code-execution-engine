@@ -35,10 +35,26 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
+			res.Status = models.StatusTimeLimitExceeded
+			res.Error = "execution timed out after 5 seconds"
 			return res, fmt.Errorf("execution timed out after 5 seconds")
 		}
 
-		return res, err
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				res.ExitCode = exitErr.ExitCode()
+				res.Status = models.StatusRuntimeError
+				res.Error = "runtime error"
+			} else {
+				res.Status = models.StatusInternalError
+				res.Error = err.Error()
+			}
+			return res, err
+		}
+
+		res.Status = models.StatusSuccess
+		res.ExitCode = 0
+		return res, nil
 	}
 	// compiled languages
 	executable := filepath.Join(os.TempDir(), fmt.Sprintf("%d.exe", time.Now().UnixNano()))
@@ -50,7 +66,15 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 	compileOutput, err := compilecmd.CombinedOutput()
 
 	if err != nil {
-		return &models.ExecutionResult{Output: string(compileOutput)}, err
+		res := &models.ExecutionResult{
+			Output: string(compileOutput),
+			Status: models.StatusCompilationError,
+			Error:  "compilation error",
+		}
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			res.ExitCode = exitErr.ExitCode()
+		}
+		return res, err
 	}
 	//execute
 	runCmd := exec.CommandContext(ctx, executable)
@@ -61,8 +85,24 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
+		res.Status = models.StatusTimeLimitExceeded
+		res.Error = "execution timed out after 5 seconds"
 		return res, fmt.Errorf("execution timed out after 5 seconds")
 	}
 
-	return res, err
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			res.ExitCode = exitErr.ExitCode()
+			res.Status = models.StatusRuntimeError
+			res.Error = "runtime error"
+		} else {
+			res.Status = models.StatusInternalError
+			res.Error = err.Error()
+		}
+		return res, err
+	}
+
+	res.Status = models.StatusSuccess
+	res.ExitCode = 0
+	return res, nil
 }
