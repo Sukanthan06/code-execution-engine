@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/Sukanthan06/code-execution-engine/config"
 	"github.com/Sukanthan06/code-execution-engine/models"
@@ -54,10 +55,13 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
+	startTime := time.Now()
 	output, err := cmd.CombinedOutput()
+	duration := time.Since(startTime).Milliseconds()
 
 	res := &models.ExecutionResult{
-		Output: string(output),
+		Output:    string(output),
+		RuntimeMS: duration,
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {

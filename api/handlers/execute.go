@@ -65,14 +65,16 @@ func ExecuteCode(c *gin.Context) {
 		if result != nil {
 			resp.Status = result.Status
 			resp.ExitCode = result.ExitCode
+			resp.RuntimeMS = result.RuntimeMS
 		}
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
 	c.JSON(http.StatusOK, models.ExecuteResponse{
-		Output:   output,
-		Status:   result.Status,
-		ExitCode: result.ExitCode,
+		Output:    output,
+		Status:    result.Status,
+		ExitCode:  result.ExitCode,
+		RuntimeMS: result.RuntimeMS,
 	})
 }

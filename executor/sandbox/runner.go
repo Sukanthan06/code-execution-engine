@@ -29,9 +29,13 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 
 		cmd := exec.CommandContext(ctx, LocalInterpreter, tmpFile.Name())
 
+		startTime := time.Now()
 		output, err := cmd.CombinedOutput()
+		duration := time.Since(startTime).Milliseconds()
+
 		res := &models.ExecutionResult{
-			Output: string(output),
+			Output:    string(output),
+			RuntimeMS: duration,
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
@@ -79,9 +83,13 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 	//execute
 	runCmd := exec.CommandContext(ctx, executable)
 
+	startTime := time.Now()
 	runOutput, err := runCmd.CombinedOutput()
+	duration := time.Since(startTime).Milliseconds()
+
 	res := &models.ExecutionResult{
-		Output: string(runOutput),
+		Output:    string(runOutput),
+		RuntimeMS: duration,
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
