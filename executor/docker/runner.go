@@ -12,7 +12,7 @@ import (
 	"github.com/Sukanthan06/code-execution-engine/models"
 )
 
-func RunCode(code string, extension string, DockerInterpreter string, DockerCompiler string) (*models.ExecutionResult, error) {
+func RunCode(code string, extension string, dockerInterpreter string, dockerCompiler string) (*models.ExecutionResult, error) {
 
 	tmpFile, err := os.CreateTemp("", "*"+extension)
 	if err != nil {
@@ -45,10 +45,10 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 		config.AppConfig.DockerImage,
 	}
 
-	if DockerInterpreter != "" {
-		args = append(args, DockerInterpreter, fmt.Sprintf("/app/main%s", extension))
-	} else if DockerCompiler != "" {
-		command := fmt.Sprintf("%s /app/main%s -o /tmp/main || exit 100; /tmp/main", DockerCompiler, extension)
+	if dockerInterpreter != "" {
+		args = append(args, dockerInterpreter, fmt.Sprintf("/app/main%s", extension))
+	} else if dockerCompiler != "" {
+		command := fmt.Sprintf("%s /app/main%s -o /tmp/main || exit 100; /tmp/main", dockerCompiler, extension)
 		args = append(args, "bash", "-c", command)
 	} else {
 		return nil, fmt.Errorf("no valid interpreter or compiler configured")
@@ -73,7 +73,7 @@ func RunCode(code string, extension string, DockerInterpreter string, DockerComp
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			res.ExitCode = exitErr.ExitCode()
-			if DockerCompiler != "" && res.ExitCode == 100 {
+			if dockerCompiler != "" && res.ExitCode == 100 {
 				res.Status = models.StatusCompilationError
 				res.Error = "compilation error"
 			} else {

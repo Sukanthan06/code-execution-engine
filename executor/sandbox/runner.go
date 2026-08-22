@@ -11,7 +11,7 @@ import (
 	"github.com/Sukanthan06/code-execution-engine/models"
 )
 
-func RunCode(code string, extension string, LocalInterpreter string, LocalCompiler string) (*models.ExecutionResult, error) {
+func RunCode(code string, extension string, localInterpreter string, localCompiler string) (*models.ExecutionResult, error) {
 	tmpFile, err := os.CreateTemp("", "*"+extension)
 	if err != nil {
 		return nil, err
@@ -25,9 +25,9 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	// for interpreted languages
-	if LocalInterpreter != "" {
+	if localInterpreter != "" {
 
-		cmd := exec.CommandContext(ctx, LocalInterpreter, tmpFile.Name())
+		cmd := exec.CommandContext(ctx, localInterpreter, tmpFile.Name())
 
 		startTime := time.Now()
 		output, err := cmd.CombinedOutput()
@@ -64,10 +64,10 @@ func RunCode(code string, extension string, LocalInterpreter string, LocalCompil
 	executable := filepath.Join(os.TempDir(), fmt.Sprintf("%d.exe", time.Now().UnixNano()))
 
 	defer os.Remove(executable)
-	//compile
-	compilecmd := exec.CommandContext(ctx, LocalCompiler, tmpFile.Name(), "-o", executable)
+	// compile
+	compileCmd := exec.CommandContext(ctx, localCompiler, tmpFile.Name(), "-o", executable)
 
-	compileOutput, err := compilecmd.CombinedOutput()
+	compileOutput, err := compileCmd.CombinedOutput()
 
 	if err != nil {
 		res := &models.ExecutionResult{
