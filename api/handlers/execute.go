@@ -20,7 +20,7 @@ func ExecuteCode(c *gin.Context) {
 		return
 	}
 
-	lang, exists := languages.SupportedLanguages[req.Language]
+	lang, exists := languages.GetLanguage(req.Language)
 
 	if !exists {
 		c.JSON(http.StatusBadRequest, models.ExecuteResponse{

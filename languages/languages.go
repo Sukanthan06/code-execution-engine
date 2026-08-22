@@ -11,8 +11,8 @@ type Language struct {
 	DockerCompiler string
 }
 
-// language resgistry
-var SupportedLanguages = map[string]Language{
+// language registry
+var supportedLanguages = map[string]Language{
 	"python": {
 		Name:              "Python",
 		Extension:         ".py",
@@ -37,4 +37,16 @@ var SupportedLanguages = map[string]Language{
 		LocalCompiler:  "g++",
 		DockerCompiler: "g++",
 	},
+}
+
+// GetLanguage returns the Language configuration for the given language name.
+func GetLanguage(name string) (Language, bool) {
+	lang, exists := supportedLanguages[name]
+	return lang, exists
+}
+
+// IsSupported checks if the given language name is registered.
+func IsSupported(name string) bool {
+	_, exists := supportedLanguages[name]
+	return exists
 }
