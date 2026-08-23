@@ -12,6 +12,13 @@ import (
 	"github.com/Sukanthan06/code-execution-engine/models"
 )
 
+const (
+	dockerCmd            = "docker"
+	containerAppDir      = "/app/main"
+	containerTmpBin      = "/tmp/main"
+	compileErrorExitCode = 100
+)
+
 func RunCode(code string, extension string, dockerInterpreter string, dockerCompiler string) (*models.ExecutionResult, error) {
 
 	tmpFile, err := os.CreateTemp("", "*"+extension)
@@ -33,6 +40,9 @@ func RunCode(code string, extension string, dockerInterpreter string, dockerComp
 	if err != nil {
 		return nil, err
 	}
+
+	containerSourcePath := containerAppDir + extension
+
 	args := []string{
 		"run",
 		"--rm",
@@ -41,20 +51,20 @@ func RunCode(code string, extension string, dockerInterpreter string, dockerComp
 		"--cpus=" + config.AppConfig.CPULimit,
 		"--read-only",
 		"--tmpfs", "/tmp:rw,exec",
-		"-v", fmt.Sprintf("%s:/app/main%s:ro", absPath, extension),
+		"-v", fmt.Sprintf("%s:%s:ro", absPath, containerSourcePath),
 		config.AppConfig.DockerImage,
 	}
 
 	if dockerInterpreter != "" {
-		args = append(args, dockerInterpreter, fmt.Sprintf("/app/main%s", extension))
+		args = append(args, dockerInterpreter, containerSourcePath)
 	} else if dockerCompiler != "" {
-		command := fmt.Sprintf("%s /app/main%s -o /tmp/main || exit 100; /tmp/main", dockerCompiler, extension)
+		command := fmt.Sprintf("%s %s -o %s || exit %d; %s", dockerCompiler, containerSourcePath, containerTmpBin, compileErrorExitCode, containerTmpBin)
 		args = append(args, "bash", "-c", command)
 	} else {
 		return nil, fmt.Errorf("no valid interpreter or compiler configured")
 	}
 
-	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd := exec.CommandContext(ctx, dockerCmd, args...)
 	startTime := time.Now()
 	output, err := cmd.CombinedOutput()
 	duration := time.Since(startTime).Milliseconds()
@@ -73,7 +83,7 @@ func RunCode(code string, extension string, dockerInterpreter string, dockerComp
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			res.ExitCode = exitErr.ExitCode()
-			if dockerCompiler != "" && res.ExitCode == 100 {
+			if dockerCompiler != "" && res.ExitCode == compileErrorExitCode {
 				res.Status = models.StatusCompilationError
 				res.Error = "compilation error"
 			} else {
