@@ -14,8 +14,9 @@ func ExecuteCode(c *gin.Context) {
 	var req models.ExecuteRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+		c.JSON(http.StatusBadRequest, models.ExecuteResponse{
+			Status: models.StatusInternalError,
+			Error:  err.Error(),
 		})
 		return
 	}
@@ -32,7 +33,7 @@ func ExecuteCode(c *gin.Context) {
 	var result *models.ExecutionResult
 	var err error
 
-	if req.Language == "python" || req.Language == "javascript" || req.Language == "c" || req.Language == "cpp" {
+	if lang.DockerInterpreter != "" || lang.DockerCompiler != "" {
 		result, err = dockerrunner.RunCode(
 			req.Code,
 			lang.Extension,

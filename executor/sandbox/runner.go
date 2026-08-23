@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Sukanthan06/code-execution-engine/config"
 	"github.com/Sukanthan06/code-execution-engine/models"
 )
 
@@ -22,7 +23,7 @@ func RunCode(code string, extension string, localInterpreter string, localCompil
 		return nil, err
 	}
 	tmpFile.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AppConfig.Timeout)
 	defer cancel()
 	// for interpreted languages
 	if localInterpreter != "" {
@@ -40,8 +41,8 @@ func RunCode(code string, extension string, localInterpreter string, localCompil
 
 		if ctx.Err() == context.DeadlineExceeded {
 			res.Status = models.StatusTimeLimitExceeded
-			res.Error = "execution timed out after 5 seconds"
-			return res, fmt.Errorf("execution timed out after 5 seconds")
+			res.Error = fmt.Sprintf("execution timed out after %v", config.AppConfig.Timeout)
+			return res, fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
 		}
 
 		if err != nil {
@@ -94,8 +95,8 @@ func RunCode(code string, extension string, localInterpreter string, localCompil
 
 	if ctx.Err() == context.DeadlineExceeded {
 		res.Status = models.StatusTimeLimitExceeded
-		res.Error = "execution timed out after 5 seconds"
-		return res, fmt.Errorf("execution timed out after 5 seconds")
+		res.Error = fmt.Sprintf("execution timed out after %v", config.AppConfig.Timeout)
+		return res, fmt.Errorf("execution timed out after %v", config.AppConfig.Timeout)
 	}
 
 	if err != nil {
