@@ -90,6 +90,10 @@ run_test "C++ Compilation Error" "cpp" "${bad_cpp_code}" "COMPILATION_ERROR"
 net_code=$'import socket\ntry:\n    socket.create_connection(("1.1.1.1", 80), timeout=2)\n    print("NETWORK_CONNECTED")\nexcept Exception:\n    print("NETWORK_BLOCKED")'
 run_test "Network Isolation Test" "python" "${net_code}" "SUCCESS" "NETWORK_BLOCKED"
 
+# 9. Security Verification: Read-Only Filesystem & Writable /tmp
+readonly_code=$'import os\ntry:\n    with open("/app/readonly_test.txt", "w") as f:\n        f.write("fail")\n    print("WRITE_ALLOWED")\nexcept Exception:\n    with open("/tmp/writable_test.txt", "w") as f:\n        f.write("ok")\n    print("READONLY_ENFORCED")'
+run_test "Read-Only Filesystem Test" "python" "${readonly_code}" "SUCCESS" "READONLY_ENFORCED"
+
 echo "========================================="
 if [ "${FAILURES}" -gt 0 ]; then
     echo "[FAIL] ${FAILURES} integration test(s) failed."
