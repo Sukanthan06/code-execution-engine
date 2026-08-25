@@ -37,11 +37,18 @@ run_test() {
         -H "Content-Type: application/json" \
         -d "${payload}")
 
+    actual_execution_id=$(echo "${response}" | jq -r '.execution_id // empty')
     actual_status=$(echo "${response}" | jq -r '.status // empty')
     actual_output=$(echo "${response}" | jq -r '.output // empty')
     actual_error=$(echo "${response}" | jq -r '.error // empty')
 
     echo "Response: ${response}"
+
+    if [ -z "${actual_execution_id}" ]; then
+        echo "[FAIL] ${name}: Expected non-empty execution_id in response"
+        FAILURES=$((FAILURES + 1))
+        return
+    fi
 
     if [ "${actual_status}" != "${expected_status}" ]; then
         echo "[FAIL] ${name}: Expected status '${expected_status}', got '${actual_status}'"

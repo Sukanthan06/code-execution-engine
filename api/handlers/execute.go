@@ -8,15 +8,19 @@ import (
 	"github.com/Sukanthan06/code-execution-engine/languages"
 	"github.com/Sukanthan06/code-execution-engine/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func ExecuteCode(c *gin.Context) {
+	executionID := uuid.New().String()
+
 	var req models.ExecuteRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ExecuteResponse{
-			Status: models.StatusInternalError,
-			Error:  err.Error(),
+			ExecutionID: executionID,
+			Status:      models.StatusInternalError,
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -25,8 +29,9 @@ func ExecuteCode(c *gin.Context) {
 
 	if !exists {
 		c.JSON(http.StatusBadRequest, models.ExecuteResponse{
-			Status: models.StatusUnsupportedLanguage,
-			Error:  "unsupported language",
+			ExecutionID: executionID,
+			Status:      models.StatusUnsupportedLanguage,
+			Error:       "unsupported language",
 		})
 		return
 	}
@@ -60,8 +65,9 @@ func ExecuteCode(c *gin.Context) {
 			errMsg = result.Error
 		}
 		resp := models.ExecuteResponse{
-			Output: output,
-			Error:  errMsg,
+			ExecutionID: executionID,
+			Output:      output,
+			Error:       errMsg,
 		}
 		if result != nil {
 			resp.Status = result.Status
@@ -73,9 +79,10 @@ func ExecuteCode(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.ExecuteResponse{
-		Output:    output,
-		Status:    result.Status,
-		ExitCode:  result.ExitCode,
-		RuntimeMS: result.RuntimeMS,
+		ExecutionID: executionID,
+		Output:      output,
+		Status:      result.Status,
+		ExitCode:    result.ExitCode,
+		RuntimeMS:   result.RuntimeMS,
 	})
 }
