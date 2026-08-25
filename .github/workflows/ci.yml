@@ -1,0 +1,68 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  go-verification:
+    name: Go Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
+      - name: Verify Go Code Formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "The following files are not formatted with gofmt:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run Go Vet
+        run: go vet ./...
+
+      - name: Run Go Unit Tests
+        run: go test ./...
+
+      - name: Build Go Binaries
+        run: go build ./...
+
+  docker-and-integration-tests:
+    name: Docker Build & Integration Tests
+    runs-on: ubuntu-latest
+    needs: go-verification
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
+      - name: Build Docker Image
+        run: |
+          docker build -t code-runner -f executor/docker/Dockerfile executor/docker
+
+      - name: Build API Binary
+        run: go build -o server main.go
+
+      - name: Run Integration Tests
+        run: |
+          ./server &
+          SERVER_PID=$!
+          
+          # Ensure server process cleanup on exit
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          
+          chmod +x scripts/ci-test.sh
+          ./scripts/ci-test.sh
