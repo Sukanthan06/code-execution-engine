@@ -1,0 +1,48 @@
+name: Docker Integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: docker-integration-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
+
+jobs:
+  docker-integration:
+    name: Docker Integration Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Run Go Unit Tests
+        run: go test ./...
+
+      - name: Build Docker Sandbox Image
+        run: |
+          docker build -t code-runner -f executor/docker/Dockerfile executor/docker
+
+      - name: Build API Binary
+        run: go build -o server main.go
+
+      - name: Run Integration Tests
+        run: |
+          ./server &
+          SERVER_PID=$!
+          
+          # Clean up background server on exit
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          
+          chmod +x scripts/ci-test.sh
+          ./scripts/ci-test.sh
