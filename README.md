@@ -1,6 +1,7 @@
 # Code Execution Engine
 
-[![CI Pipeline](https://github.com/Sukanthan06/code-execution-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Sukanthan06/code-execution-engine/actions/workflows/ci.yml)
+[![Fast CI](https://github.com/Sukanthan06/code-execution-engine/actions/workflows/fast-ci.yml/badge.svg)](https://github.com/Sukanthan06/code-execution-engine/actions/workflows/fast-ci.yml)
+[![Docker Integration](https://github.com/Sukanthan06/code-execution-engine/actions/workflows/docker-integration.yml/badge.svg)](https://github.com/Sukanthan06/code-execution-engine/actions/workflows/docker-integration.yml)
 
 A secure, high-performance, multi-language code execution engine built in Go inspired by Judge0 and Piston.
 
@@ -73,23 +74,27 @@ All submissions for supported languages run in isolated Docker containers config
 
 ---
 
-## Continuous Integration (GitHub Actions)
+## Two-Tier CI Architecture (GitHub Actions)
 
-Every `push` and `pull_request` to `main` / `master` automatically triggers the GitHub Actions CI pipeline (`.github/workflows/ci.yml`):
+To minimize GitHub Actions minutes on private repositories while preserving strict quality gates, the CI pipeline is split into two specialized workflows:
 
-1. **Go Verification**:
-   - Formats check (`gofmt`).
-   - Static analysis (`go vet ./...`).
-   - Unit tests (`go test ./...`).
-   - Compilation check (`go build ./...`).
-2. **Docker Build**:
-   - Builds the application Docker sandbox image (`code-runner`).
-3. **Real Integration Tests (`scripts/ci-test.sh`)**:
-   - Launches the live Go API server.
-   - Waits for `/health` endpoint readiness.
-   - Executes real integration tests for **Python**, **JavaScript**, **C**, and **C++**.
-   - Validates **timeout enforcement**, **C/C++ compilation errors**, and **network isolation**.
-   - Verifies returned JSON `output`, `status`, and `exit_code`.
+### 1. Fast CI (`.github/workflows/fast-ci.yml`)
+- **Triggers**: Every `push` to any branch, and every `pull_request`.
+- **Purpose**: Rapidly validates Go code formatting (`gofmt`), static analysis (`go vet ./...`), unit tests (`go test ./...`), and compilation (`go build ./...`) without incurring expensive Docker image build time.
+- **Concurrency**: Automatically cancels outdated in-progress runs on feature branch pushes.
+
+### 2. Docker Integration CI (`.github/workflows/docker-integration.yml`)
+- **Triggers**:
+  - Open, updated, or reopened **Pull Requests** targeting `main`/`master`.
+  - Pushes directly to `main`/`master`.
+  - Manual triggers via `workflow_dispatch`.
+- **Purpose**: Runs end-to-end integration tests (`scripts/ci-test.sh`) against a live Go API server and Docker sandbox container.
+- **Verification Coverage**:
+  - Python, JavaScript, C, and C++ execution correctness.
+  - C/C++ compilation error detection.
+  - 5-second timeout enforcement (`TIME_LIMIT_EXCEEDED`).
+  - Network isolation (`--network none` blocking socket connections).
+  - Read-only root filesystem enforcement and writable `/tmp`.
 
 ---
 
